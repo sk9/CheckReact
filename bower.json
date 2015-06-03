@@ -1,0 +1,21 @@
+{
+    "name": "twitter_stream",
+    "version": "0.0.0",
+    "authors": [
+        "Sebastian Kopatz <skopatz@gmx.net>"
+    ],
+    "license": "MIT",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "src/bower",
+        "test",
+        "tests"
+    ],
+    "dependencies": {
+        "animate.css": "~3.2.1",
+        "materialize": "~0.95.2",
+        "font-awesome": "~4.3.0"
+    }
+}

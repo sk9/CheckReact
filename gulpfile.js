@@ -1,21 +1,103 @@
-var gulp = require('gulp');
-var browserify = require('gulp-browserify');
-var concat = require('gulp-concat');
+var gulp = require("gulp")
+var webserver = require("gulp-webserver")
+var concat = require("gulp-concat")
+var sass = require("gulp-sass")
+var browserify = require("browserify")
+var reactify= require("reactify")
+var babelify = require("babelify")
+var source = require("vinyl-source-stream")
+var watchify = require("watchify")
+var livereload = require("gulp-livereload")
 
-gulp.task('browserify', function() {
-    gulp.src('src/js/main.js')
-      .pipe(browserify({transform: 'reactify'}))
-      .pipe(concat('main.js'))
-      .pipe(gulp.dest('dist/js'));
-});
+var DEST = "build"
 
-gulp.task('copy', function() {
-    gulp.src('src/index.html')
-      .pipe(gulp.dest('dist'));
-});
+var src = {
+  webpages: "src/*.html",
+  css: "./src/css/*.scss",
+  images: "src/images/*.*"
+}
 
-gulp.task('default',['browserify', 'copy']);
+gulp.task("default", ["watch"])
 
-gulp.task('watch', function() {
-    gulp.watch('src/**/*.*', ['default']);
-});
+gulp.task("watch", ["build-app", "webserver"], function() {
+  gulp.watch(src.webpages, ["move-webpages"])
+  gulp.watch(src.css, ["css"])
+  gulp.watch(src.images, ["images"])
+})
+
+gulp.task("build-app", ["move-webpages", "bower-css", "bower-js", "fonts", "fonts-awesome", "css", "images", "react"])
+
+gulp.task("move-webpages", function() {
+  return gulp.src(src.webpages)
+    .pipe(gulp.dest(DEST))
+})
+
+gulp.task('css', function () {
+  return gulp.src(src.css)
+    .pipe(sass())
+    .pipe(concat("main.css"))
+    .pipe(gulp.dest(DEST + "/css"))
+})
+
+gulp.task("images", function() {
+  return gulp.src(src.images)
+    .pipe(gulp.dest(DEST + "/images"))
+})
+
+gulp.task("bower-css", function() {
+  return gulp.src([
+    "src/bower/materialize/bin/materialize.css",
+    "src/bower/animate.css/animate.css",
+    "src/bower/font-awesome/css/font-awesome.css"
+  ])
+  .pipe(concat("vendor.css"))
+  .pipe(gulp.dest(DEST + "/css"))
+})
+
+gulp.task("bower-js", function() {
+  return gulp.src([
+    'src/bower/jquery/dist/jquery.js',
+    'src/bower/materialize/dist/js/materialize.js'])
+    .pipe(concat('vendor.js'))
+    .pipe(gulp.dest(DEST + "/js"))
+})
+
+gulp.task("fonts", function() {
+  return gulp.src([
+    "src/bower/materialize/font/**/*"
+  ])
+  .pipe(gulp.dest(DEST + "/font"))
+})
+
+gulp.task("fonts-awesome", function() {
+  return gulp.src([
+    "./src/bower/font-awesome/fonts/**.*"
+  ])
+  .pipe(gulp.dest(DEST + "/fonts"))
+})
+
+gulp.task("webserver", ["build-app"], function() {
+  return gulp.src("build")
+    .pipe(webserver({
+      livereload: true
+    }))
+})
+
+gulp.task("react", function() {
+  var bundler;
+
+  var bundle = function() {
+    return bundler.bundle()
+      .pipe(source("main.js"))
+      .pipe(gulp.dest(DEST + "/js"))
+      .pipe(livereload())
+  }
+
+  bundler = browserify("./src/main.js", watchify.args)
+  bundler.transform(reactify)
+  bundler.transform(babelify)
+  bundler.on("update", bundle)
+  bundler = watchify(bundler)
+
+  return bundle()
+})
